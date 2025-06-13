@@ -7,7 +7,6 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-
 from realest_tate_agent.ai_models import LlmFactory, LlmTier
 
 llm = LlmFactory().instantiate_llm(LlmTier.STANDARD, temperature=0.0)
@@ -23,6 +22,7 @@ class AgentState(TypedDict):
     messages: List[str]
     human_input: Optional[str]
 
+
 MOCK_PROPERTIES = [
     {
         "id": 1,
@@ -31,7 +31,7 @@ MOCK_PROPERTIES = [
         "bathrooms": 2,
         "price": 2500,
         "area": "Downtown",
-        "features": ["Parking", "Balcony", "Pet-friendly"]
+        "features": ["Parking", "Balcony", "Pet-friendly"],
     },
     {
         "id": 2,
@@ -40,7 +40,7 @@ MOCK_PROPERTIES = [
         "bathrooms": 2,
         "price": 3200,
         "area": "Suburbs",
-        "features": ["Garden", "Garage", "Near schools"]
+        "features": ["Garden", "Garage", "Near schools"],
     },
     {
         "id": 3,
@@ -49,7 +49,7 @@ MOCK_PROPERTIES = [
         "bathrooms": 1,
         "price": 1800,
         "area": "City Center",
-        "features": ["Modern", "Gym access", "Public transport"]
+        "features": ["Modern", "Gym access", "Public transport"],
     },
     {
         "id": 4,
@@ -58,9 +58,10 @@ MOCK_PROPERTIES = [
         "bathrooms": 3,
         "price": 4500,
         "area": "Riverside",
-        "features": ["River view", "Large kitchen", "2-car garage"]
-    }
+        "features": ["River view", "Large kitchen", "2-car garage"],
+    },
 ]
+
 
 def detect_user_type(state: AgentState) -> AgentState:
     """Detect whether the user is looking to rent or owns a property."""
@@ -72,13 +73,17 @@ def detect_user_type(state: AgentState) -> AgentState:
     ).strip()
     state["human_input"] = user_input
     state["messages"].append(f"User: {user_input}")
-    
-    response = llm.invoke(
-        f"""You are a real estate agent. Based on the user's input, determine if they are an owner or resident.
+
+    response = (
+        llm.invoke(
+            f"""You are a real estate agent. Based on the user's input, determine if they are an owner or resident.
         User input: {user_input}.
         "Only respond with 'owner' or 'resident'."""
-    ).content.strip().lower()
-    
+        )
+        .content.strip()
+        .lower()
+    )
+
     if "owner" == response:
         state["user_type"] = "owner"
         state["current_step"] = "collect_owner_details"
@@ -88,19 +93,21 @@ def detect_user_type(state: AgentState) -> AgentState:
     else:
         state["messages"].append("Please specify 'owner' or 'resident'")
         state["current_step"] = "detect_user_type"
-    
+
     return state
+
 
 def route_user_type(state: AgentState) -> str:
     """Route user to the appropriate branch based on their type"""
     user_type = state.get("user_type", "detect_user_type")
-    
+
     if user_type == "owner":
         return "owner"
     elif user_type == "resident":
         return "resident"
     else:
         return "not_a_valid_type"
+
 
 def collect_owner_details(state: AgentState) -> AgentState:
     """Collect the owner user's details"""
@@ -116,7 +123,7 @@ You: """
     user_input = input(question).strip()
     state["human_input"] = user_input
     state["messages"].append(f"You: {user_input}")
-    
+
     # Use an LLM to parse the details
     result = llm.invoke(
         f"""Extract the owner details from the following input and format as a
@@ -152,11 +159,15 @@ You: """
                 break
             except json.JSONDecodeError:
                 if i == 2:
-                    raise ValueError("Failed to parse owner details after multiple attempts; result is:\n" + result.content)
+                    raise ValueError(
+                        "Failed to parse owner details after multiple attempts; result is:\n"
+                        + result.content
+                    )
                 details = {}
 
     state["owner_details"] = details
     return state
+
 
 def schedule_inspection(state: AgentState) -> AgentState:
     """Schedule inspection for vacant property with utilities"""
@@ -194,22 +205,24 @@ def schedule_inspection(state: AgentState) -> AgentState:
 
     return state
 
+
 def confirm_owner_details(state: AgentState) -> AgentState:
     """Confirm owner details and inspection date"""
     details = state.get("owner_details", {})
     inspection_date = state.get("inspection_date")
-    
+
     confirmation = "Confirmation of Details:\n"
     for key, value in details.items():
         confirmation += f"- {key}: {value}\n"
-    
+
     if inspection_date:
         confirmation += f"- Inspection Date: {inspection_date}\n"
-    
+
     confirmation += "\nThank you for providing your property details!"
-    
+
     state["messages"].append(confirmation)
     return state
+
 
 def collect_resident_preferences(state: AgentState) -> AgentState:
     """Collect resident preferences"""
@@ -229,8 +242,9 @@ def collect_resident_preferences(state: AgentState) -> AgentState:
 
     return state
 
+
 def match_properties(state: AgentState) -> AgentState:
-    """ Match preferences with available properties"""
+    """Match preferences with available properties"""
     state["current_step"] = "match_properties"
     # Have the LLM compare the user's preferences with the mock properties
     # TODO: replace mock properties with actual logic. E.g., interpolating the preferences in a query to a DB.
@@ -249,6 +263,7 @@ def match_properties(state: AgentState) -> AgentState:
     state["properties"] = matching_properties
     return state
 
+
 def show_properties(state: AgentState) -> AgentState:
     """Step 3.3: Show detailed information about properties"""
     state["current_step"] = "show_properties"
@@ -261,13 +276,14 @@ def show_properties(state: AgentState) -> AgentState:
         User preferences: {state["resident_preferences"]}.
 
         The listings are as follows:
-        {state['properties']}.
+        {state["properties"]}.
         
         You have to make the properties sound appealing and highlight why they
         are relevant and aligned with what the user requested."""
     ).content
     state["messages"].append(pretty_message)
     return state
+
 
 def route_owner_details(state: AgentState) -> str:
     """Determine next step after processing owner details"""
@@ -281,12 +297,13 @@ def route_owner_details(state: AgentState) -> str:
     else:
         return "not_ready"
 
+
 def instantiate_workflow():
     """Create and return the LangGraph graph flow."""
-    
+
     # Initialize graph with state
     workflow = StateGraph(AgentState)
-    
+
     # Add nodes
     workflow.add_node("detect_user_type", detect_user_type)
     # Owner nodes
@@ -297,19 +314,19 @@ def instantiate_workflow():
     workflow.add_node("collect_resident_preferences", collect_resident_preferences)
     workflow.add_node("match_properties", match_properties)
     workflow.add_node("show_properties", show_properties)
-    
+
     # Starting node
     workflow.set_entry_point("detect_user_type")
-    
+
     # Define steps sequence
     workflow.add_conditional_edges(
         "detect_user_type",
         route_user_type,
         {
             "owner": "collect_owner_details",
-            "resident": "collect_resident_preferences", 
-            "not_a_valid_type": "detect_user_type"  # Feed back for errors
-        }
+            "resident": "collect_resident_preferences",
+            "not_a_valid_type": "detect_user_type",  # Feed back for errors
+        },
     )
 
     # Owners branch
@@ -319,29 +336,30 @@ def instantiate_workflow():
         route_owner_details,
         {
             "ready_for_inspection": "schedule_inspection",
-            "not_ready": "confirm_owner_details"
-        }
+            "not_ready": "confirm_owner_details",
+        },
     )
     workflow.add_edge("schedule_inspection", "confirm_owner_details")
 
     # Residents branch
     workflow.add_edge("collect_resident_preferences", "match_properties")
     workflow.add_edge("match_properties", "show_properties")
-    
+
     # Add ending states
     workflow.add_edge("confirm_owner_details", END)
     workflow.add_edge("show_properties", END)
-    
+
     # Compile the graph
     memory = MemorySaver()
     app = workflow.compile(checkpointer=memory)
     app.get_graph().draw_mermaid_png(output_file_path="./graph.png")
     return app
 
+
 def run_pipeline():
     """Run the real estate agent pipeline"""
     graph = instantiate_workflow()
-    
+
     # Initialize the state
     state = AgentState(
         user_type=None,
@@ -351,17 +369,17 @@ def run_pipeline():
         inspection_date=None,
         current_step="start",
         messages=[],
-        human_input=None
+        human_input=None,
     )
-    
+
     config = {
         "configurable": {"thread_id": "realest-tate-session"},
         "recursion_limit": 10,
     }
-    
+
     print("Welcome to Realest Tate Agent!")
     print("I'm here to help you with your real estate needs.\n")
-    
+
     for chunk in graph.stream(
         state,
         stream_mode="updates",
@@ -374,10 +392,13 @@ def run_pipeline():
         # pprint(chunk)
         # print(chunk["messages"][-1])
         # print("-" * 50)
-    
-    print(list(chunk.values())[0]['messages'][-1])  # Print the message from the last graph step
-    
+
+    print(
+        list(chunk.values())[0]["messages"][-1]
+    )  # Print the message from the last graph step
+
     print("\n🎉 Thank you for using Realest Tate Agent!")
+
 
 if __name__ == "__main__":
     run_pipeline()
