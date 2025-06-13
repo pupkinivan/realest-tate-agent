@@ -6,6 +6,19 @@ It implements a flow with multiple conditions as a workflow. It does not use a s
 
 ![Graph visualization](./graph.png)
 
+## Requirements
+
+* `uv` for dependency management
+* LangSmith API key for tracing
+* AWS profile for Bedrock LLMs
+
+## Use
+
+1. Install the project locally with `uv sync`
+2. Create `.env` and/or `.secrets` file with the variables demonstrated in the .env.example file
+3. Activate the virtual environment created by uv in `.venv` and run the `src/realest_tate_agent/flow.py` script, or run it with `uv run realest_tate_agent`
+4. Enjoy
+
 ## Potential improvements
 
 * Return state updates instead of forced overwrites

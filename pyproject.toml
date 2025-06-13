@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-realest-tate-agent = "realest_tate_agent:main"
+realest-tate-agent = "realest_tate_agent:flow.main"
 
 [build-system]
 requires = ["hatchling"]

@@ -350,11 +350,18 @@ def instantiate_workflow():
     # Compile the graph
     memory = MemorySaver()
     app = workflow.compile(checkpointer=memory)
-    app.get_graph().draw_mermaid_png(output_file_path="./graph.png")
     return app
 
 
-def run_pipeline():
+def export_graph_image():
+    """Export the graph as an image for visualization."""
+
+    graph = instantiate_workflow()
+    graph.draw_mermaid_png(output_file_path="./graph.png")
+    print("Graph exported as 'graph.png'")
+
+
+def main():
     """Run the real estate agent pipeline"""
     graph = instantiate_workflow()
 
@@ -399,4 +406,4 @@ def run_pipeline():
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()
