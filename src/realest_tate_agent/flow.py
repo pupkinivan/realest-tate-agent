@@ -263,7 +263,7 @@ def match_properties(state: AgentState) -> AgentState:
 
 
 def show_properties(state: AgentState) -> AgentState:
-    """Step 3.3: Show detailed information about properties"""
+    """Show detailed information about properties"""
     state["current_step"] = "show_properties"
     # Have the LLM format the output in an apealing way for the user
 
@@ -328,7 +328,6 @@ def instantiate_workflow():
     )
 
     # Owners branch
-    # workflow.add_edge("collect_owner_details", "route_owner_details")
     workflow.add_conditional_edges(
         "collect_owner_details",
         route_owner_details,
